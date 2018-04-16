@@ -17,13 +17,7 @@ end
 function Mondrian_started_at(Θ::Axis_Aligned_Box,t₀,cuts, Tₗ = 5)
     LD = Linear_dimension(Θ)
     T = rand(Exponential(1/LD))
-    p_k = zeros(Θ.D)
-    for i in 1:Θ.D
-        p_k[i] = Θ.Intervals[i,2]-Θ.Intervals[i,1]
-    end
-    p_k = p_k ./ LD
-    d = rand(Categorical(p_k))
-    x = rand(Uniform(Θ.Intervals[d,1][1],Θ.Intervals[d,2][1]))
+    d,x = sample_split_dimension(Θ)
     if(T+t₀ >= Tₗ)
         return (t₀,t₀+T,d,x)
     end
