@@ -2,6 +2,8 @@
 
 Mondrian processes and Mondrian Forests
 
+Checkout the [movie](https://github.com/harveydevereux/Mondrian/blob/master/mondrian.gif)
+
 
 ## References
 - [Balaji Lakshminarayanan, Daniel M. Roy, Yee Whye Teh, Mondrian Forests: Efficient Online Random Forests, Advances in Neural Information Processing Systems 27 (NIPS), pages 3140-3148, 2014](http://arxiv.org/abs/1406.2673)
