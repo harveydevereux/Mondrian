@@ -18,11 +18,11 @@ function Mondrian_started_at(Θ::Axis_Aligned_Box,t₀,cuts, Tₗ = 5)
     p_k = p_k ./ LD
     d = rand(Categorical(p_k))
     x = rand(Uniform(Θ.Intervals[d,1][1],Θ.Intervals[d,2][1]))
-    c=(x,d,Θ.Intervals,t₀+T)
-    push!(cuts,c)
     if(T+t₀ >= Tₗ)
         return (t₀,t₀+T,d,x)
     end
+    c=(x,d,Θ.Intervals,t₀+T)
+    push!(cuts,c)
     Θᴸ = copy(Θ)
     Θᴿ = copy(Θ)
     Θᴸ.Intervals[d,2]=x
