@@ -34,10 +34,10 @@ function sample_split_dimension(Θ)
 end
 
 function get_intervals(X)
-    intervals = zeros(size(X,1),2)
-    for i in 1:size(X,1)
-        l = minimum(X[i,:])
-        u = maximum(X[i,:])
+    intervals = zeros(size(X,2),2)
+    for i in 1:size(X,2)
+        l = minimum(X[:,i])
+        u = maximum(X[:,i])
         intervals[i,:] = [l,u]
     end
     return intervals
