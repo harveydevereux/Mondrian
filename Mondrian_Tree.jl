@@ -1,19 +1,25 @@
+#### Mondrian Tree as in https://arxiv.org/abs/1406.2673
+#### Lakshminarayanan, B., Roy, D.M. and Teh, Y.W., 2014. Mondrian forests: Efficient online random forests. In Advances in neural information processing systems (pp. 3140-3148).
+#### Alogrithm numbers (e.g A1) are as in the above paper
 using Distributions
+# for mondrian process
 include("Axis_Aligned_Box.jl");
 type Mondrian_Node
     parent::Nullable{Mondrian_Node}
     left::Nullable{Mondrian_Node}
     right::Nullable{Mondrian_Node}
-    τ::Float64
+    τ::Float64                      # split time
     node_type::Array{Bool,1}        # node,leaf,root
     δ::Nullable{Int}                # split dimension
     ζ::Nullable{Float64}            # split position
     Θ::Nullable{Axis_Aligned_Box}   # data boxes B
-    tab::Array{Int}
-    c::Array{Int}
-    Gₚ::Array{Float64}
-    indices::Array{Int}
+    tab::Array{Int}                 # tables serving dish k Chinese restaurant process (CRP)
+    c::Array{Int}                   # customers eating dish k, tab[k] = min(c[k],1) IKN approx
+    Gₚ::Array{Float64}              # posterior mean (predictive probability)
+    indices::Array{Int}             # data within the boxes Θ
 end
+
+# some construction options
 
 function Mondrian_Node(τ, node_type, tab, c, Gₚ)
     N = Mondrian_Node(Nullable{Mondrian_Node}(),
@@ -76,6 +82,7 @@ function Mondrian_Node(τ::Float64, node_type::Array{Bool,1})
     return N
 end
 
+# only really need leaves + root directly
 type Mondrian_Tree
     root::Nullable{Mondrian_Node}
     leaves::Array{Mondrian_Node,1}
@@ -90,12 +97,11 @@ function Mondrian_Tree(N::Mondrian_Node)
     T = Mondrian_Tree(N,Array{Mondrian_Node,1}(),0)
 end
 
-function Sample_Mondrian_Tree(λ,D)
-    δ = []
-    ζ = []
-    n = 1:size(D,1)
+
+function Sample_Mondrian_Tree!(MT,λ,D)
+    # initialise the tree
     e = Mondrian_Node(0.0,[false,false,true])
-    T = Mondrian_Tree(e)
+    MT.root = e
     Θ = Axis_Aligned_Box(get_intervals(D[1]))
     e.Θ = Θ
     e.tab = zeros(size(unique(D[2]),1))
@@ -103,34 +109,43 @@ function Sample_Mondrian_Tree(λ,D)
     e.Gₚ = zeros(size(unique(D[2]),1))
     e.indices = collect(1:size(D[1],1))
     k=[0]
-    Sample_Mondrian_Block(e, Θ, λ, δ, ζ, T, D[1],k,D[1])
-    T.number_of_nodes = k[1]
-    return T
+    Sample_Mondrian_Block!(e, Θ, λ, MT, D[1],k)
+    MT.number_of_nodes = k[1]
+    return MT
 end
 
-function Sample_Mondrian_Block(j, Θ, λ, δ, ζ, tree, Data,k,D)
+function Sample_Mondrian_Block!(j, Θ, λ, tree, Data,k)
     k[1] += 1
+    # sample the time
     E = rand(Exponential(1/Linear_dimension(Θ)))
     if j.node_type[3]==true
         τₚ = 0
     else
         τₚ = (get(j.parent)).τ
     end
+    # if split occured in time
     if τₚ + E < λ
+        # get split dimension and cut position
+        # A2 -> lines 6,7
         d,x = sample_split_dimension(Θ)
+        # update node j's data
         j.δ = d
         j.ζ = x
         j.τ = τₚ+E
         Θᴸ = Θ
         # look at this copy
         Θᴿ = copy(Θ)
+        # Left and Right children have constricted boxes
         Θᴸ.Intervals[d,2]=x
         Θᴿ.Intervals[d,1]=x+1e-6
+        # check there is actually data here
         Dᴿ = get_data_indices(Θᴿ,Data)
         Dᴸ = get_data_indices(Θᴸ,Data)
+        # strictly binary tree
         if (size(Dᴿ,1)>0 && size(Dᴸ,1)>0)
             right = Mondrian_Node(0.0, [true,false,false])
             right.parent = j
+            # data changes A2 -> lines 8,9,10
             right.Θ = Axis_Aligned_Box(get_intervals(Data[Dᴿ,:]))
             right.tab = zeros(size(j.tab))
             right.c = zeros(size(j.tab))
@@ -145,15 +160,17 @@ function Sample_Mondrian_Block(j, Θ, λ, δ, ζ, tree, Data,k,D)
             left.Gₚ = zeros(size(j.c,1))
             j.left = left
 
-            Sample_Mondrian_Block(left, Θᴸ, λ, δ, ζ, tree, Data[Dᴸ,:],k)
-            Sample_Mondrian_Block(right,Θᴿ,λ, δ, ζ, tree, Data[Dᴿ,:],k)
-
+            # recurse
+            Sample_Mondrian_Block!(left, Θᴸ, λ, tree, Data[Dᴸ,:],k)
+            Sample_Mondrian_Block!(right,Θᴿ,λ, tree, Data[Dᴿ,:],k)
+        # set j as a leaf for no data/ not binary
         else
             j.τ = λ
             j.node_type = [false,true,false]
             push!(tree.leaves,j)
             return
         end
+    # set j as leaf for time out
     else
         j.τ = λ
         j.node_type = [false,true,false]
@@ -162,7 +179,12 @@ function Sample_Mondrian_Block(j, Θ, λ, δ, ζ, tree, Data,k,D)
     end
 end
 
+# returns any data from D contained in the boxes of Θ
 function get_data_indices(Θ::Axis_Aligned_Box, D::Array{Float64,2})
+    # this function cause large memory allocation according
+    # to @time but the system does not record any
+    # large memory allocation -> ram does not get increased
+    # at all!
     indices = []
     include = false
     for i in 1:size(D,1)
@@ -180,6 +202,9 @@ function get_data_indices(Θ::Axis_Aligned_Box, D::Array{Float64,2})
     return indices
 end
 
+# counts the proportion of each label in
+# the data contained within the leaf nodes
+# Θ
 function initialize_posterior_leaf_counts!(Tree, D)
     X = D[1]
     Y = D[2]
@@ -195,6 +220,7 @@ function initialize_posterior_leaf_counts!(Tree, D)
     end
 end
 
+# uses the leaf node counts to get the internal node counts
 function initialize_posterior_counts!(Tree,D)
     initialize_posterior_leaf_counts!(Tree,D)
     for leaf in Tree.leaves
@@ -217,6 +243,8 @@ function initialize_posterior_counts!(Tree,D)
     end
 end
 
+# gamma is usually set to 10*dimensionality
+# which is done above somewhere
 function compute_predictive_posterior_distribution!(Tree, γ=1)
     J = [get(Tree.root)]
     while (size(J,1) != 0)
@@ -229,7 +257,7 @@ function compute_predictive_posterior_distribution!(Tree, γ=1)
             p = get(j.parent).Gₚ
         end
         for k in 1:length(j.c)
-            j.Gₚ[k] = (1/(sum(j.c)+1))*(j.c[k]-d*j.tab[k]+sum(j.tab)*p[k])
+            j.Gₚ[k] = (1/(sum(j.c)))*(j.c[k]-d*j.tab[k]+sum(j.tab)*p[k])
         end
         if sum(j.node_type)==0
             break
@@ -241,11 +269,14 @@ function compute_predictive_posterior_distribution!(Tree, γ=1)
     end
 end
 
+# the algorithm requires computing an expectation
+# empirically
 function expected_discount(nⱼ, Δⱼ,γ=1)
     Δ = rand(Truncated(Exponential(1/nⱼ),0,Δⱼ),10000)
     return mean(exp.(-γ*Δ))
 end
 
+# predict te class probs
 function predict!(T,x, γ=1)
     j = get(T.root)
     not_sep = 1
@@ -264,8 +295,9 @@ function predict!(T,x, γ=1)
             nⱼ += max(x[d]-get(j.Θ).Intervals[d,2],0) + max(get(j.Θ).Intervals[d,1]-x[d],0)
         end
         pⱼ = 1-exp(Δⱼ*nⱼ)
+        # yes this part does add nodes to the tree!
+        # although i've never seen it called...
         if pⱼ > 0
-            println("Yes")
             # x branches
             jₓ = Mondrian_Node()
             if (j == get(j.parent).left)
@@ -305,6 +337,7 @@ function predict!(T,x, γ=1)
     end
 end
 
+# compute depth
 function depth(Tree::Mondrian_Tree)
     j = Tree.leaves[1]
     d = 0
