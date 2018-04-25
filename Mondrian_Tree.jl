@@ -17,6 +17,7 @@ type Mondrian_Node
     c::Array{Int}                   # customers eating dish k, tab[k] = min(c[k],1) IKN approx
     Gₚ::Array{Float64}              # posterior mean (predictive probability)
     indices::Array{Int}             # data within the boxes Θ
+    Θ_draw::Nullable{Axis_Aligned_Box}   # data boxes B
 end
 
 # some construction options
@@ -32,7 +33,8 @@ function Mondrian_Node(τ, node_type, tab, c, Gₚ)
                       tab,
                       c,
                       Gₚ,
-                      Array{Int}())
+                      Array{Int}(),
+                      Nullable{Axis_Aligned_Box}())
     return N
 end
 
@@ -47,7 +49,8 @@ function Mondrian_Node()
                       Array{Int}(),
                       Array{Int}(),
                       Array{Float64}(),
-                      Array{Int}())
+                      Array{Int}(),
+                      Nullable{Axis_Aligned_Box}())
     return N
 end
 
@@ -62,7 +65,8 @@ function Mondrian_Node(τ::Float64)
                       Array{Int}(),
                       Array{Int}(),
                       Array{Float64}(),
-                      Array{Int}(1))
+                      Array{Int}(1),
+                      Nullable{Axis_Aligned_Box}())
     return N
 end
 
@@ -78,7 +82,8 @@ function Mondrian_Node(τ::Float64, node_type::Array{Bool,1})
                       Array{Int}(),
                       Array{Int}(),
                       Array{Float64}(),
-                      Array{Int}())
+                      Array{Int}(),
+                      Nullable{Axis_Aligned_Box}())
     return N
 end
 
@@ -104,6 +109,7 @@ function Sample_Mondrian_Tree!(MT,λ,D)
     MT.root = e
     Θ = Axis_Aligned_Box(get_intervals(D[1]))
     e.Θ = Θ
+    e.Θ_draw = Θ
     e.tab = zeros(size(unique(D[2]),1))
     e.c = zeros(size(unique(D[2]),1))
     e.Gₚ = zeros(size(unique(D[2]),1))
@@ -136,7 +142,7 @@ function Sample_Mondrian_Block!(j, Θ, λ, tree, Data,k)
         Θᴿ = copy(Θ)
         # Left and Right children have constricted boxes
         Θᴸ.Intervals[d,2]=x
-        Θᴿ.Intervals[d,1]=x+1e-6
+        Θᴿ.Intervals[d,1]=x
         # check there is actually data here
         Dᴿ = get_data_indices(Θᴿ,Data)
         Dᴸ = get_data_indices(Θᴸ,Data)
@@ -145,7 +151,8 @@ function Sample_Mondrian_Block!(j, Θ, λ, tree, Data,k)
             right = Mondrian_Node(0.0, [true,false,false])
             right.parent = j
             # data changes A2 -> lines 8,9,10
-            right.Θ = Axis_Aligned_Box(get_intervals(Data[Dᴿ,:]))
+            right.Θ = Θᴿ#Axis_Aligned_Box(get_intervals(Data[Dᴿ,:]))
+            right.Θ_draw = Θᴿ
             right.tab = zeros(size(j.tab))
             right.c = zeros(size(j.tab))
             right.Gₚ=zeros(size(j.c,1))
@@ -153,7 +160,8 @@ function Sample_Mondrian_Block!(j, Θ, λ, tree, Data,k)
 
             left = Mondrian_Node(0.0, [true,false,false])
             left.parent = j
-            left.Θ = Axis_Aligned_Box(get_intervals(Data[Dᴸ,:]))
+            left.Θ = Θᴸ#Axis_Aligned_Box(get_intervals(Data[Dᴸ,:]))
+            left.Θ_draw = Θᴸ
             left.tab = zeros(size(j.tab))
             left.c = zeros(size(j.tab))
             left.Gₚ = zeros(size(j.c,1))
