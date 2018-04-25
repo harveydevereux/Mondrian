@@ -111,7 +111,6 @@ function Sample_Mondrian_Tree!(MT,λ,D)
     k=[0]
     Sample_Mondrian_Block!(e, Θ, λ, MT, D[1],k)
     MT.number_of_nodes = k[1]
-    return MT
 end
 
 function Sample_Mondrian_Block!(j, Θ, λ, tree, Data,k)
@@ -132,7 +131,7 @@ function Sample_Mondrian_Block!(j, Θ, λ, tree, Data,k)
         j.δ = d
         j.ζ = x
         j.τ = τₚ+E
-        Θᴸ = Θ
+        Θᴸ = copy(Θ)
         # look at this copy
         Θᴿ = copy(Θ)
         # Left and Right children have constricted boxes
@@ -161,8 +160,8 @@ function Sample_Mondrian_Block!(j, Θ, λ, tree, Data,k)
             j.left = left
 
             # recurse
-            Sample_Mondrian_Block!(left, Θᴸ, λ, tree, Data[Dᴸ,:],k)
-            Sample_Mondrian_Block!(right,Θᴿ,λ, tree, Data[Dᴿ,:],k)
+            Sample_Mondrian_Block!(left, get(left.Θ), λ, tree, Data[Dᴸ,:],k)
+            Sample_Mondrian_Block!(right,get(right.Θ),λ, tree, Data[Dᴿ,:],k)
         # set j as a leaf for no data/ not binary
         else
             j.τ = λ
@@ -335,15 +334,4 @@ function predict!(T,x, γ=1)
             end
         end
     end
-end
-
-# compute depth
-function depth(Tree::Mondrian_Tree)
-    j = Tree.leaves[1]
-    d = 0
-    while !(j.node_type[3])
-        j = get(j.parent)
-        d+=1
-    end
-    return d
 end

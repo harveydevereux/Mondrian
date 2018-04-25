@@ -9,8 +9,8 @@ immutable Axis_Aligned_Box
 end
 
 # constructor with intervals
-function Axis_Aligned_Box(intervals)
-    Θ = Axis_Aligned_Box(intervals, size(intervals,1))
+function Axis_Aligned_Box(Intervals)
+    Θ = Axis_Aligned_Box(Intervals, size(Intervals,1))
     return Θ
 end
 
