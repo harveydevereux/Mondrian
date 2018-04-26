@@ -1,6 +1,6 @@
 include("Mondrian_Tree.jl")
 
-type Mondrian_Tree_Classifier
+mutable struct Mondrian_Tree_Classifier
     Tree::Mondrian_Tree
     λ::Float64
     γ::Real
@@ -23,7 +23,7 @@ function Mondrian_Tree_Classifier(Tree::Mondrian_Tree,
     return Mondrian_Tree_Classifier(Tree,λ,0,X,Y)
 end
 
-type Mondrian_Forest_Classifier
+mutable struct Mondrian_Forest_Classifier
     n_trees::Int64
     Trees::Array{Mondrian_Tree}
     X::Array{Float64,2}
@@ -41,6 +41,7 @@ function train!(Tree::Mondrian_Tree,
                 X::Array{Float64,2},
                 Y::Array{Int64},λ=1e9)
     Sample_Mondrian_Tree!(Tree,λ,X,Y)
+    #initialize_posterior_counts!(Tree,X,Y)
     compute_predictive_posterior_distribution!(Tree,10*size(X,2))
 end
 function predict!(Tree::Mondrian_Tree,X::Array{Float64,2})
