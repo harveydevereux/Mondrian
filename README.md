@@ -1,6 +1,6 @@
 # Mondrian
 
-# project continued at [here](https://github.com/dominusmi/warwick-rsg/tree/MondrianForest)
+## Project continued [here](https://github.com/dominusmi/warwick-rsg/tree/MondrianForest)
 
 Mondrian processes and Mondrian Forests
 
