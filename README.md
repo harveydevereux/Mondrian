@@ -1,5 +1,7 @@
 # Mondrian
 
+# project continued at [here](https://github.com/dominusmi/warwick-rsg/tree/MondrianForest)
+
 Mondrian processes and Mondrian Forests
 
 Checkout the [movie](https://github.com/harveydevereux/Mondrian/blob/master/mondrian.gif)
@@ -10,4 +12,3 @@ Checkout the [movie](https://github.com/harveydevereux/Mondrian/blob/master/mond
 - [Balaji Lakshminarayanan, Daniel M. Roy, Yee Whye Teh, Mondrian Forests for Large-Scale Regression when Uncertainty Matters, Proceedings of the 19th International Conference on Artificial Intelligence and Statistics (AISTATS) 2016, Cadiz, Spain. JMLR: W&CP volume 51](https://arxiv.org/abs/1506.03805)
 - [Matej Balog, Yee Whye Teh, The Mondrian Process for Machine Learning](http://arxiv.org/abs/1507.05181)
 
-:gem:
