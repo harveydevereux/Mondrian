@@ -4,7 +4,14 @@
 
 Mondrian processes and Mondrian Forests
 
-Checkout the [movie](https://github.com/harveydevereux/Mondrian/blob/master/mondrian.gif)
+## Comparison with Python
+
+![alt text](https://raw.githubusercontent.com/harveydevereux/Mondrian/master/resources/n_tree_scale.png)
+
+
+## Mondrian Process visualisation:
+
+![alt text](https://raw.githubusercontent.com/harveydevereux/Mondrian/master/resources/mondrian.gif)
 
 
 ## References
