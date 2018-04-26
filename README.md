@@ -4,7 +4,9 @@
 
 Mondrian processes and Mondrian Forests
 
-## Comparison with [Python](https://github.com/balajiln/mondrianforest)
+## Comparison with [Python](https://github.com/nel215/mondrianforest)
+
+[Other package](https://github.com/balajiln/mondrianforest)
 
 ![alt text](https://raw.githubusercontent.com/harveydevereux/Mondrian/master/resources/n_tree_scale.png)
 
