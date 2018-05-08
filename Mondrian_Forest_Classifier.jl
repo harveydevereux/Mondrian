@@ -65,7 +65,6 @@ function predict!(Tree::Mondrian_Tree,      # batch prediction NB supposedly can
     return pred
 end
 
-# Need to fix
 function predict_proba!(Tree::Mondrian_Tree,      # batch prediction NB supposedly can change tree structure!
                         X::Array{Float64,2})
     pred = []
@@ -101,17 +100,17 @@ function predict!(MF::Mondrian_Forest_Classifier,
     return p
 end
 
-# Need to fix
 function predict_proba!(MF::Mondrian_Forest_Classifier,
                         X::Array{Float64,2})
-    pred = zeros(MF.n_trees,size(X,1))
-    for i in 1:length(MF.Trees)
-        println(predict_proba!(MF.Trees[i],X))
-        pred[i,:] = predict_proba!(MF.Trees[i], X)
-    end
-    p = Array{Int,1}(size(X,1))
+    pred = []
     for i in 1:size(X,1)
-        p[i] = mean(pred[:,i])
+        push!(pred,[0.0,0.0])
     end
-    return p
+    for i in 1:length(MF.Trees)
+        p=predict_proba!(MF.Trees[i], X)
+        for item in enumerate(p)
+            pred[item[1]] += item[2]
+        end
+    end
+    return pred/size(X,1)
 end
