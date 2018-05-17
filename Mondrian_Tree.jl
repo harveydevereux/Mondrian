@@ -1,7 +1,3 @@
-#### TODO remove some old functions: initialize_posterior_leaf_counts! et al
-
-
-
 #### Mondrian Tree as in https://arxiv.org/abs/1406.2673
 #### Lakshminarayanan, B., Roy, D.M. and Teh, Y.W., 2014. Mondrian forests: Efficient online random forests. In Advances in neural information processing systems (pp. 3140-3148).
 #### Alogrithm numbers (e.g A1) are as in the above paper
@@ -66,40 +62,47 @@ end
 
 function Sample_Mondrian_Tree!(Tree::Mondrian_Tree,
                                λ::Float64,
-                               X::Array{Float64,2},
+                               X::Array{Float64,N} where N,
                                Y::Array{Int64})
     # initialise the tree
     e = Mondrian_Node(0.0,[false,false,true])
     Tree.root = e
     Θ = Axis_Aligned_Box(get_intervals(X))
     e.Θ = Θ
-    get_count(e,Y, length(unique(Y)))
-    e.Gₚ = zeros(size(unique(Y),1))
+    get_count(e,Y, 2)
+    e.Gₚ = zeros(2)
     Sample_Mondrian_Block!(e, Θ, λ, Tree, X, Y)
+    return Tree
 end
 
 function Sample_Mondrian_Block!(j::Mondrian_Node,
                                 Θ::Axis_Aligned_Box,
                                 λ::Float64,
                                 Tree::Mondrian_Tree,
-                                X::Array{Float64,2},
+                                X::Array{Float64,N} where N,
                                 Y::Array{Int64})
-    # sample the time
-    E = rand(Exponential(1/Linear_dimension(Θ)))
-    if j.node_type[3]==true
-        τₚ = 0
+    # paused mondrian check
+    # should be one for pure targets
+    if sum(j.c .> 0) == 1
+        j.τ = λ
     else
-        τₚ = (get(j.parent)).τ
+        # not paused, sample the time
+        E = rand(Exponential(1/Linear_dimension(Θ)))
+        if j.node_type[3]==true
+            τₚ = 0
+        else
+            τₚ = (get(j.parent)).τ
+        end
+        j.τ = τₚ+E
     end
-    # if split occured in time
-    if τₚ + E < λ
+    # if pausing should fall to the next else, other wise split is valid
+    if j.τ < λ
         # get split dimension and cut position
         # A2 -> lines 6,7
         d,x = sample_split_dimension(Θ)
         # update node j's data
         j.δ = d
         j.ζ = x
-        j.τ = τₚ+E
         Θᴸ = copy(Θ)
         # look at this copy
         Θᴿ = copy(Θ)
@@ -139,14 +142,21 @@ function Sample_Mondrian_Block!(j::Mondrian_Node,
     # set j as leaf for time out
     else
         j.τ = λ
-        j.node_type = [false,true,false]
+        # this is is to handle the case of a single
+        # data point, so the root is a leaf!
+        if j.node_type == [false,false,true]
+            j.node_type = [false,true,true]
+        # normal stuff
+        else
+            j.node_type = [false,true,false]
+        end
         push!(Tree.leaves,j)
         return
     end
 end
 
 # only check indices against the changed dimension CF lines 93-97
-function get_data_indices(Θ::Axis_Aligned_Box, X::Array{Float64,2}, dim::Int64)
+function get_data_indices(Θ::Axis_Aligned_Box, X::Array{Float64,N} where N, dim::Int64)
     # this function cause large memory allocation according
     # to @time but the system does not record any
     # large memory allocation -> ram does not get increased
@@ -160,7 +170,7 @@ function get_data_indices(Θ::Axis_Aligned_Box, X::Array{Float64,2}, dim::Int64)
     return indices
 end
 # returns any data from D contained in the boxes of Θ
-function get_data_indices(Θ::Axis_Aligned_Box, X::Array{Float64,2})
+function get_data_indices(Θ::Axis_Aligned_Box, X::Array{Float64,N} where N)
     # this function cause large memory allocation according
     # to @time but the system does not record any
     # large memory allocation -> ram does not get increased

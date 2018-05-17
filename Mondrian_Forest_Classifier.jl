@@ -6,7 +6,7 @@ mutable struct Mondrian_Tree_Classifier
     Tree::Mondrian_Tree
     λ::Float64                              # lifetime parameter set to inf in paper and 1e9 in implementations (e.g pythons)
     γ::Real                                 # Hierachy of normailized stable processes discount parameter 10*Dimensionality of data in the paper
-    X::Array{Float64,2}                     # training data
+    X::Array{Float64,N} where N                     # training data
     Y::Array{Int}                           # training labels
 end
 
@@ -20,7 +20,7 @@ end
 
 function Mondrian_Tree_Classifier(Tree::Mondrian_Tree,
                                   λ::Float64,
-                                  X::Array{Float64,2},
+                                  X::Array{Float64,N} where N,
                                   Y::Array{Int64})
     return Mondrian_Tree_Classifier(Tree,λ,0,X,Y)
 end
@@ -44,7 +44,7 @@ end
 ### Mondrian Tree Training and Prediction
 
 function train!(Tree::Mondrian_Tree,
-                X::Array{Float64,2},
+                X::Array{Float64,N} where N,
                 Y::Array{Int64},
                 λ=1e9)
     Sample_Mondrian_Tree!(Tree,λ,X,Y)
@@ -52,7 +52,7 @@ function train!(Tree::Mondrian_Tree,
 end
 
 function predict!(Tree::Mondrian_Tree,      # batch prediction NB supposedly can change tree structure!
-                  X::Array{Float64,2})
+                  X::Array{Float64,N} where N)
     pred = []
     for i in 1:size(X,1)
         p = predict!(Tree,X[i,:],10*size(X,2))
@@ -80,7 +80,7 @@ function train!(MF::Mondrian_Forest_Classifier,
                 X::Array{Float64,2},
                 Y::Array{Int64},
                 λ::Float64=1e9)
-    for i in 1:MF.n_trees
+    @parallel for i in 1:MF.n_trees
         Tree = Mondrian_Tree()
         train!(Tree, X, Y, λ)
         push!(MF.Trees,Tree)
@@ -112,5 +112,39 @@ function predict_proba!(MF::Mondrian_Forest_Classifier,
             pred[item[1]] += item[2]
         end
     end
-    return pred/size(X,1)
+    return pred/length(MF.Trees)
+end
+
+## For testing
+
+function FakedataClassif(N,d,N_test=0)
+    X = randn((N,d))
+    param1 = randn(d)
+    param2 = randn(d)
+    Y = ( sum(X*param1,2) .> mean(sum(X*param2,2)) )
+    if (N_test > 0)
+        x = randn((N_test,d))
+        y = ( sum(x*param1,2) .> mean(sum(x*param2,2)) )
+        return X,Y,x,y
+    end
+    return X,Y
+end
+
+## print the tree with text
+
+function print_mondrian_tree(node::Mondrian_Node, depth=-1, indent=0)
+    ## Adapted function from DecisionTree.jl
+    ## https://github.com/bensadeghi/DecisionTree.jl/blob/5f0adc5d6d0280f995ccc364e5d00a72f6387368/src/DecisionTree.jl#L89
+    if (node.node_type != [0,0,1]) & (indent==0)
+        println("Not starting from root node..")
+    end
+    if (node.node_type == [0,1,0])
+        println("Prediction: ", round.((node.Gₚ),3))
+        return
+    end
+    println("τ: ",round((node.τ),3))
+    print("    " ^ indent * "L-> ")
+    print_mondrian_tree(get(node.left), depth, indent + 1)
+    print("    " ^ indent * "R-> ")
+    print_mondrian_tree(get(node.right), depth, indent + 1)
 end
