@@ -4,6 +4,10 @@
 
 Mondrian processes and Mondrian Forests
 
+## Gif of splits of a ~90-95% accurate model
+
+![atl text](resources/MT.gif)
+
 ## Comparison with [Python](https://github.com/nel215/mondrianforest)
 
 [Other package](https://github.com/balajiln/mondrianforest)
