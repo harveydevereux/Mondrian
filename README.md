@@ -12,8 +12,11 @@ Mondrian processes and Mondrian Forests
 
 [Other package](https://github.com/balajiln/mondrianforest)
 
-![alt text](https://raw.githubusercontent.com/harveydevereux/Mondrian/master/resources/n_tree_scale.png)
+![alt text](https://raw.githubusercontent.com/harveydevereux/Mondrian/master/comparisons/n_tree_scale.png)
 
+The amazing scaling of the algorithm is likely an issue with @time (or tic(),toq() et al) and
+@parallel. The above is more like the next graph without @parallel (still very good). 
+More investigation is required.
 
 ![alt text](https://raw.githubusercontent.com/harveydevereux/Mondrian/master/resources/n_data_scale.png)
 
