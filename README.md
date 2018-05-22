@@ -1,6 +1,7 @@
 # Mondrian
 
-## My part of [this project](https://github.com/dominusmi/warwick-rsg/tree/master)
+## My parts of [this project](https://github.com/dominusmi/warwick-rsg/tree/master) 
+
 
 Mondrian processes and Mondrian Forests
 
